@@ -1,0 +1,41 @@
+# Ultralytics YOLO 🚀, AGPL-3.0 license
+# YOLOv8-seg instance segmentation model. For Usage examples see https://docs.ultralytics.com/tasks/segment
+# Parameters
+nc: 80  # number of classes
+scales: # model compound scaling constants, i.e. 'model=yolov8n-seg.yaml' will call yolov8-seg.yaml with scale 'n'
+  # [depth, width, max_channels]
+  n: [0.67, 0.75, 768]
+  s: [0.67, 0.75, 768]
+  m: [0.67, 0.75, 768]
+  l: [0.67, 0.75, 768]
+  x: [0.67, 0.75, 768]
+
+# YOLOv8.0n backbone
+backbone:                                             #             [batch, dim * m width(输入的c2), size, size]  dim(rgb,d)
+  # [from, repeats, module, args]                           input:  [batch, 4         (4)         , 640, 640]       (3, 1)
+  - [-1, 1, MSFocus_Module, [64, 3, 1, 2]]            # 0-P1/2      [batch, 64 * 0.75 (48)        , 320, 320]       (48,24)
+  - [-1, 3, MSAF_Block, [128, True, 2, True, False]]  # 1-P2/4      [batch, 128 * 0.75(96)        , 160, 160]       (96,48)
+  - [-1, 6, MSAF_Block, [256, True, 2, True, True]]   # 2-P3/8      [batch, 256 * 0.75(192)       , 80, 80]         (192,96)
+  - [-1, 6, MSAF_Block, [512, True, 2, True, True]]   # 3-P4/16     [batch, 512 * 0.75(384)       , 40, 40]         (384,192)
+  - [-1, 3, MSAF_Block, [1024, True, 2, True, True]]  # 4-P5/32     [batch, 768 * 0.75(576)       , 20, 20]         (576,288)
+  - [-1, 1, MFSPPF_Module, [1024, 5, 2, True, True]]  # 5           [batch, 768 * 0.75(576)       , 20, 20]         (576)
+
+# YOLOv8.0n head
+head:
+  - [-1, 1, nn.Upsample, [None, 2, 'nearest']]  # 6 [40,40]
+  - [[-1, 3], 1, MSConcat_DCA, [1]]  # cat backbone P4 rgb
+  - [-1, 3, C2f, [512]]  # 8
+
+  - [-1, 1, nn.Upsample, [None, 2, 'nearest']]  # 9 [80,80]
+  - [[-1, 2], 1, MSConcat_DCA, [1]]  # cat backbone P3 rgb
+  - [-1, 3, C2f, [256]]  # 11 (P3/8-small)
+
+  - [-1, 1, Conv, [256, 3, 2]]  # 12 [40,40]
+  - [[-1, 8], 1, Concat, [1]]  # cat head P4 fusion
+  - [-1, 3, C2f, [512]]  # 14 (P4/16-medium)
+
+  - [-1, 1, Conv, [512, 3, 2]]  # 15 [20,20]
+  - [[-1, 5], 1, Concat, [1]]  # cat head P5 fusion
+  - [-1, 3, C2f, [1024]]  # 17 (P5/32-large)
+
+  - [[11, 14, 17], 1, Segment, [nc, 32, 256]]  # Segment(P3, P4, P5)
