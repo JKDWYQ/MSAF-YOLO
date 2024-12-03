@@ -1,0 +1,13 @@
+train: dataset/Snackbox/train/images
+val: dataset/Snackbox/valid/images
+test: dataset/Snackbox/test/images
+
+nc: 18
+names: ['LFQ-1-1', 'LFQ-1-2', 'LFQ-2-1', 'LFQ-2-2', 'LFQ-3-1', 'LFQ-3-2', 'nabati-1-1', 'nabati-1-2', 'nabati-2-1', 'nabati-2-2', 'nabati-3-1', 'nabati-3-2', 'pie-1-1', 'pie-1-2', 'pie-2-1', 'pie-2-2', 'pie-3-1', 'pie-3-2']
+
+roboflow:
+  workspace: box-snacks
+  project: YOLO-10000-18-box
+  version: 3
+  license: CC BY 4.0
+  url: https://universe.roboflow.com/box-snacks/YOLO-10000-18-box/dataset/3
