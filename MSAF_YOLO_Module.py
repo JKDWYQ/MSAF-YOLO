@@ -31,15 +31,12 @@ class Conv(nn.Module):
         return self.act(self.conv(x))
 
 
-class focus(nn.Module):  # 3/2xc1 2:1
-
+class focus(nn.Module):
     def __init__(self):
-        """Initialize Conv layer with given arguments including activation."""
-        super().__init__()  # c1=4 -> 3:1 -> Focus * 4 -> 12:4
+        super().__init__()
 
-    def forward(self, x_rgb):
-        """Apply convolution, batch normalization and activation to input tensor."""
-        return torch.cat((x_rgb[..., ::2, ::2], x_rgb[..., 1::2, ::2], x_rgb[..., ::2, 1::2], x_rgb[..., 1::2, 1::2]), 1)
+    def forward(self, x):
+        return torch.cat((x[..., ::2, ::2], x[..., 1::2, ::2], x[..., ::2, 1::2], x[..., 1::2, 1::2]), 1)
 
 
 class dconv(nn.Module):
@@ -54,10 +51,8 @@ class dconv(nn.Module):
         return self.dconvk_1(self.relu(self.bn(self.dconv1_k(x))))
 
 
-class DCSAtt_RCA(nn.Module):  # 09107
-    """Spatial-attention module."""
-
-    def __init__(self, c=2, kernel_size=(3, 1, 5, 9)):  # 9 11
+class DCSAtt_RCA(nn.Module):
+    def __init__(self, c=2, kernel_size=(3, 1, 5, 9)):
         super().__init__()
         self.pool_h = nn.AdaptiveAvgPool2d((None, 1))
         self.pool_w = nn.AdaptiveAvgPool2d((1, None))
@@ -135,15 +130,11 @@ class DCMSA(nn.Module):
         return [x[0], x[1], DCCA, DCSA]
 
 
-class MSFocus_Module(nn.Module):  # 3/2xc1 2:1
-    """
-    split and Focus
-    """
+class MSFocus_Module(nn.Module):
+    """split and Focus"""
     default_act = nn.SiLU()  # default activation
-
     def __init__(self, c1=4, c2=64, k=1, s=1, scale=2, p=None, g=1, d=1, act=True):
-        """Initialize Conv layer with given arguments including activation."""
-        super().__init__()  # c1=4 -> 3:1 -> Focus * 4 -> 12:4
+        super().__init__()
         self.cout_x = c2 // scale
         self.cout_rgb = c2
         self.focus = focus()
@@ -163,7 +154,6 @@ class MSFocus_Module(nn.Module):  # 3/2xc1 2:1
 
 class MSAF_Block(nn.Module):
     """Faster Implementation of CSP Bottleneck with 2 convolutions."""
-
     def __init__(self, c1, c2, n=1, shortcut=False, scale=2, use_att=True, DC=True, e=0.5, k=3, s=2, p=None, g=1, d=1, act=True):
         super().__init__()
         # MSConv
@@ -182,23 +172,22 @@ class MSAF_Block(nn.Module):
         self.cv2 = Conv((2 + n) * self.c, c2, 1)  # optional act=FReLU(c2)
         self.m = nn.ModuleList(Bottleneck(self.c, self.c, shortcut, g, k=((3, 3), (3, 3)), e=1.0) for _ in range(n))
 
-    def forward(self, x):  # 0:1 144 160 160
+    def forward(self, x):
         # MSConv
         x_rgb, x_x = self.act(self.bn_rgb(self.conv_rgb(x[0]))), self.act(self.bn_x(self.conv_x(x[1])))
-        # Deep Connection Attention
+        # DCMSA
         DCCA, DCSA = x[2:] if self.DC else [None, None]
         if self.use_att:
             x_rgb, x_x, DCCA, DCSA = self.DCMSA([x_rgb, x_x, DCCA, DCSA])
-        # C2f
+        # C2fusion
         y = list(self.cv1(torch.cat([x_x, x_rgb], dim=1)).chunk(2, 1))
         y.extend(m(y[-1]) for m in self.m)
         x_fusion = self.cv2(torch.cat(y, 1))
         return [x_fusion, x_x, DCCA, DCSA]
 
 
-class MFSPPF_Module(nn.Module):  # 3/2xc1 2:1
+class MFSPPF_Module(nn.Module):
     """Spatial Pyramid Pooling - Fast (SPPF) layer for YOLOv5 by Glenn Jocher."""
-
     def __init__(self, c1, c2, k=5, scale=3):  # equivalent to SPP(k=(5, 9, 13))
         super().__init__()
         c1 = int((c2 + c2 // scale))
@@ -216,9 +205,8 @@ class MFSPPF_Module(nn.Module):  # 3/2xc1 2:1
         return self.cv2(torch.cat((x, y1, y2, self.m(y2)), 1))
 
 
-class MSConcat_DCA(nn.Module):  # 3/2xc1 2:1
+class MSConcat_DCA(nn.Module):
     """Concatenate a list of tensors along dimension."""
-
     def __init__(self, dimension=1):
         """Concatenates a list of tensors along a specified dimension."""
         super().__init__()
