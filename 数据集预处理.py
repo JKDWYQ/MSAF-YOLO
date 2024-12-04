@@ -36,13 +36,12 @@ def RGB_D2RGBD(im_rgb, im_depth, savepath):
 
 
 def extract_number(file_name):
-    return int(file_name.split("_")[0])  # 使用正则表达式匹配文件名中的数字部分
+    return int(file_name.split("_")[0])  # 得到文件名中的数字部分
 
 
-save_dataset_name = 'dataset/Snackbox_new'
-# dataset_name, split_value = 'dataset/Snackbox', True
-# dataset_name, split_value = 'dataset/Snackbox_accurate', False
-dataset_name, split_value = r'your\dataset\path', False
+save_dataset_name, split_value = 'dataset/Snackbox_new', False
+# save_dataset_name, split_value = 'dataset/Snackbox', True
+dataset_name = r'your\dataset\path'
 save_path = {'test': f"{save_dataset_name}/test/images",
              'train': f"{save_dataset_name}/train/images",
              'valid': f"{save_dataset_name}/valid/images"}  # 保存rgbd文件夹路径
