@@ -7,8 +7,8 @@ import numpy as np
 
 def depth_rendered(Depth, savepath, use_depth_min=True):
     im_depth = cv2.imread(Depth, flags=cv2.IMREAD_UNCHANGED)
-    depth_min, depth_max = 555, 810  # min < 621, max > 800
-    different_min, different_max = 125, 1400  # min < 200, max > 1100
+    depth_min, depth_max = 621, 800  # min < 621, max > 800
+    different_min, different_max = 200, 1200  # min < 200, max > 1100
     use_min, use_max = [depth_min, depth_max] if use_depth_min else [different_min, different_max]
     im_depth[(im_depth < use_min)] = use_min
     im_depth[(im_depth > use_max)] = use_max
@@ -39,8 +39,7 @@ def extract_number(file_name):
     return int(file_name.split("_")[0])  # 得到文件名中的数字部分
 
 
-save_dataset_name, split_value = 'dataset/Snackbox_new', False
-# save_dataset_name, split_value = 'dataset/Snackbox', True
+save_dataset_name, split_value, splitnum = 'dataset/dataset_new', True, 5000
 dataset_name = r'your\dataset\path'
 save_path = {'test': f"{save_dataset_name}/test/images",
              'train': f"{save_dataset_name}/train/images",
@@ -73,7 +72,7 @@ if __name__ == '__main__':
             rgbd_save = os.path.join(save_path[file], filename)
             rgb_image = cv2.imread(rgb, cv2.IMREAD_UNCHANGED)
             index = extract_number(filename)
-            depth_img = depth_rendered(depth, depth_save, False if index >= 5000 and split_value else True)  #
+            depth_img = depth_rendered(depth, depth_save, False if index >= splitnum and split_value else True)  #
             RGB_D2RGBD(rgb_image, depth_img, rgbd_save)  # 1
         end = time.time()
         print(f"{file} cost ", end - start, "second")
